@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from routes.user_routes import user_bp
 from routes.project_routes import project_bp
 from routes.prompt_routes import prompt_bp
@@ -25,6 +25,22 @@ app.register_blueprint(share_bp)
 @app.route('/')
 def home():
     return "PromptFlow Backend Running 🚀"
+
+@app.route('/ui')
+def ui():
+    return render_template('login.html')
+
+@app.route('/register-ui')
+def register_ui():
+    return render_template('register.html')
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
+@app.route('/prompts')
+def prompts():
+    return render_template('prompt.html')
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,20 +1,26 @@
-from flask import Blueprint
+from flask import Blueprint, request
 from db import get_db_connection
 
 activity_bp = Blueprint('activity_bp', __name__)
 
-@activity_bp.route('/activity/<int:user_id>', methods=['GET'])
-def get_activity(user_id):
+@activity_bp.route('/activity', methods=['GET'])
+def get_activity():
+    prompt_id = request.args.get("prompt_id")
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     query = """
-    SELECT * FROM Activity_Logs
-    WHERE user_id = %s
-    ORDER BY timestamp DESC
+    SELECT 
+        al.*, 
+        u.username
+    FROM Activity_Logs al
+    JOIN Users u ON al.user_id = u.user_id
+    WHERE al.prompt_id = %s
+    ORDER BY al.timestamp DESC
     """
 
-    cursor.execute(query, (user_id,))
+    cursor.execute(query, (prompt_id,))
     data = cursor.fetchall()
 
     cursor.close()

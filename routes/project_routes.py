@@ -1,5 +1,6 @@
 from service.project_service import create_project
 from flask import Blueprint, request
+from service.project_service import get_projects
 
 project_bp = Blueprint('project_bp', __name__)
 
@@ -16,4 +17,13 @@ def create():
 
     result = create_project(user_id, title, description)
 
+    return result
+@project_bp.route('/get-projects', methods=['GET'])
+def fetch_projects():
+    user_id = request.args.get('user_id')
+
+    if not user_id:
+        return {"status": "error", "message": "user_id required"}
+
+    result = get_projects(user_id)
     return result

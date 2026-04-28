@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prompts - PromptFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bgDark: "#0f172a",
+                        cardDark: "#1e293b",
+                        accent: "#3b82f6"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8 min-h-screen">
+
+<h1 class="text-3xl font-bold mb-6">🧠 Prompts</h1>
+
+<!-- CREATE PROMPT -->
+<div class="bg-cardDark/80 backdrop-blur p-6 rounded-2xl shadow-lg border border-gray-700 mb-8">
+
+    <h2 class="text-lg text-gray-300 mb-3">Create New Prompt</h2>
+
+    <input id="promptTitle" type="text" placeholder="Prompt Title"
+        class="w-full mb-3 p-3 rounded-lg bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"/>
+
+    <input id="promptDesc" type="text" placeholder="Description"
+        class="w-full mb-3 p-3 rounded-lg bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"/>
+
+    <textarea id="promptContent" placeholder="Enter prompt content..."
+        class="w-full mb-3 p-3 rounded-lg bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+
+    <button onclick="createPrompt()"
+        class="bg-gradient-to-r from-blue-500 to-indigo-500 px-5 py-2 rounded-lg shadow hover:scale-105 transition">
+        + Add Prompt
+    </button>
+
+</div>
+
+<div id="promptsContainer" class="space-y-8"></div>
+
+<script>
+
+const params = new URLSearchParams(window.location.search);
+const project_id = params.get("project_id");
+
+const user_id = localStorage.getItem("user_id");
+
+if (!user_id) {
+    alert("Please login first");
+    window.location.href = "/";
+}
+
+
+// CREATE PROMPT
+function createPrompt() {
+    const title = document.getElementById("promptTitle").value.trim();
+    const description = document.getElementById("promptDesc").value.trim();
+    const content = document.getElementById("promptContent").value.trim();
+
+    if (!title || !content) {
+        alert("Title and content required");
+        return;
+    }
+
+    fetch("http://127.0.0.1:5000/create-prompt", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            project_id, title, description, user_id, content
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            loadPrompts();
+        } else alert(data.message);
+    });
+}
+
+
+// LOAD PROMPTS
+function loadPrompts() {
+    fetch(`http://127.0.0.1:5000/get-prompts?project_id=${project_id}`)
+    .then(res => res.json())
+    .then(data => {
+        const container = document.getElementById("promptsContainer");
+        container.innerHTML = "";
+
+        data.data.forEach(p => {
+
+            const card = `
+            <div class="bg-cardDark/90 p-6 rounded-2xl shadow-lg border border-gray-700">
+
+                <h2 class="text-xl font-semibold">${p.title}</h2>
+                <p class="text-gray-400 text-sm mb-4">${p.description || ""}</p>
+
+                <!-- BEST VERSION -->
+                <div id="best-${p.prompt_id}" 
+                    class="bg-green-500/10 border border-green-400 p-4 rounded-xl mb-4">
+                    <span class="text-green-400 text-xs font-semibold">⭐ Best Version</span>
+                    <p class="mt-1">Loading...</p>
+                </div>
+
+                <!-- ADD VERSION -->
+                <textarea id="version-${p.prompt_id}" 
+                    placeholder="Improve this prompt..."
+                    class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700"></textarea>
+
+                <button onclick="addVersion(${p.prompt_id})"
+                    class="mt-2 bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-1 rounded hover:scale-105 transition text-sm">
+                    + Add Version
+                </button>
+
+                <!-- SHARE -->
+                <div class="mt-6 border-t border-gray-700 pt-4">
+                    <h3 class="text-sm text-gray-400 mb-2">Share Prompt</h3>
+
+                    <input id="share-email-${p.prompt_id}" 
+                        type="email"
+                        placeholder="Enter email"
+                        class="w-full mb-2 p-2 rounded bg-gray-800 border border-gray-700"/>
+
+                    <select id="share-permission-${p.prompt_id}" 
+                        class="w-full mb-2 p-2 rounded bg-gray-800 border border-gray-700">
+                        <option value="view">View</option>
+                        <option value="edit">Edit</option>
+                    </select>
+
+                    <button onclick="sharePrompt(${p.prompt_id})"
+                        class="bg-purple-500 px-3 py-1 rounded text-sm hover:scale-105 transition">
+                        Share
+                    </button>
+                </div>
+
+                <!-- VERSIONS -->
+                <div id="versions-${p.prompt_id}" class="mt-5 space-y-3"></div>
+
+                <!-- ACTIVITY -->
+                <div class="mt-5 border-t border-gray-700 pt-3">
+                    <h3 class="text-sm text-gray-400 mb-2">Activity</h3>
+                    <div id="activity-${p.prompt_id}" class="space-y-1 text-sm"></div>
+                </div>
+
+            </div>
+            `;
+
+            container.innerHTML += card;
+
+            setTimeout(() => {
+                loadVersions(p.prompt_id);
+                loadActivity(p.prompt_id);
+            }, 100);
+        });
+    });
+}
+
+
+// ADD VERSION
+function addVersion(prompt_id) {
+    const content = document.getElementById(`version-${prompt_id}`).value.trim();
+
+    if (!content) {
+        alert("Content required");
+        return;
+    }
+
+    fetch("http://127.0.0.1:5000/add-version", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({prompt_id, content, user_id})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            loadVersions(prompt_id);
+            loadActivity(prompt_id);
+        } else alert(data.message);
+    });
+}
+
+
+// SHARE
+function sharePrompt(prompt_id) {
+    const email = document.getElementById(`share-email-${prompt_id}`).value;
+    const permission = document.getElementById(`share-permission-${prompt_id}`).value;
+
+    if (!email) {
+        alert("Enter email");
+        return;
+    }
+
+    fetch("http://127.0.0.1:5000/share-prompt", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            prompt_id,
+            email,
+            user_id,
+            permission
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            loadActivity(prompt_id);
+        } else alert(data.message);
+    });
+}
+
+
+// LOAD VERSIONS
+function loadVersions(prompt_id) {
+    fetch(`http://127.0.0.1:5000/get-versions?prompt_id=${prompt_id}`)
+    .then(res => res.json())
+    .then(data => {
+
+        const container = document.getElementById(`versions-${prompt_id}`);
+        const bestBox = document.getElementById(`best-${prompt_id}`);
+
+        container.innerHTML = "";
+
+        if (!data.data || data.data.length === 0) {
+            bestBox.innerHTML = "<p>No versions yet</p>";
+            return;
+        }
+
+        let bestContent = "";
+
+        data.data.forEach(v => {
+
+            if (v.is_best) {
+                bestContent = v.content;
+            }
+
+            const item = `
+            <div class="bg-gray-800 p-3 rounded-lg border border-gray-700 hover:border-blue-400 transition">
+
+                <p>${v.content}</p>
+
+                ${v.is_best ? `
+                    <span class="text-green-400 text-xs font-semibold">⭐ Current Best</span>
+                ` : ""}
+            </div>
+            `;
+
+            container.innerHTML += item;
+        });
+
+        bestBox.innerHTML = `
+            <span class="text-green-400 text-xs font-semibold">⭐ Best Version</span>
+            <p class="mt-1">${bestContent}</p>
+        `;
+    });
+}
+
+
+// ACTIVITY
+function loadActivity(prompt_id) {
+    fetch(`http://127.0.0.1:5000/activity?prompt_id=${prompt_id}`)
+    .then(res => res.json())
+    .then(data => {
+
+        const container = document.getElementById(`activity-${prompt_id}`);
+        container.innerHTML = "";
+
+        if (!data.data || data.data.length === 0) {
+            container.innerHTML = "<p class='text-gray-500'>No activity yet</p>";
+            return;
+        }
+
+        data.data.forEach(a => {
+
+            let text = "";
+
+            if (a.action_type === "ADD_VERSION") text = "added a version";
+            else if (a.action_type === "MARK_BEST") text = "updated best version";
+            else if (a.action_type === "CREATE_PROMPT") text = "created prompt";
+            else if (a.action_type === "SHARE_PROMPT") text = "shared prompt";
+
+            const item = `
+                <div class="text-gray-400">
+                    ${a.username} ${text}
+                    <span class="text-xs text-gray-500 ml-2">
+                        ${new Date(a.timestamp).toLocaleString()}
+                    </span>
+                </div>
+            `;
+
+            container.innerHTML += item;
+        });
+    });
+}
+
+window.onload = loadPrompts;
+
+</script>
+
+</body>
+</html>

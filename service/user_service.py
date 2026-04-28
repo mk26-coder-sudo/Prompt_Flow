@@ -38,9 +38,26 @@ def login_user(email, password):
 
     if user:
         if check_password_hash(user['password_hash'], password):
-            return {"status": "success", "message": "Login successful"}
+            return {
+                "status": "success",
+                "message": "Login successful",
+                "user_id": user['user_id'],
+                "username": user['username']
+            }
         else:
             return {"status": "error", "message": "Incorrect password"}
     else:
         return {"status": "error", "message": "User not found"}
-    
+
+def get_user_by_email(email):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    query = "SELECT user_id, username FROM Users WHERE email = %s"
+    cursor.execute(query, (email,))
+    user = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return user
