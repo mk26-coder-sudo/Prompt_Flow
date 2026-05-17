@@ -214,5 +214,4 @@ http://127.0.0.1:5000
 * ⚙️ Stored procedures & triggers
 
 
-**Mrunal Khadke**
-Engineering Student | DBMS & Backend Enthusiast
+
