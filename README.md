@@ -148,12 +148,14 @@ Each log includes:
 
 ## 📸 Demo
 
-🎥 **Watch 2-min demo to understand the full workflow**
-(Add your video link here)
+<p align="center">
+  <a href="https://drive.google.com/file/d/1vwkrd3eo2GaR6w66qq_pup2_Zu1PYlQF/view?usp=sharing">
+    <img src="https://img.shields.io/badge/▶️-Watch%20Demo%20Video-red?style=for-the-badge"/>
+  </a>
+</p>
 
-### Dashboard Preview
-
-
+📷 Screenshots
+<p align="center"> <img src="images/i1.png" width="300"/> </p> <p align="center"> <img src="images/i2.png" width="300"/> </p> <p align="center"> <img src="images/i3.png" width="380"/> </p> <p align="center"> <img src="images/i4.png" width="380"/> </p> <p align="center"> <img src="images/i5.png" width="380"/> </p>
 ---
 
 ## ⚡ Sample Queries
